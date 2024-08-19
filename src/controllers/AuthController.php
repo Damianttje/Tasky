@@ -7,7 +7,7 @@ class AuthController {
     }
 
     public function login($username, $password) {
-        $stmt = $this->db->prepare("SELECT * FROM users WHERE username = :username");
+        $stmt = $this->db->prepare("SELECT * FROM users WHERE LOWER(username) = LOWER(:username)");
         $stmt->bindValue(':username', $username, SQLITE3_TEXT);
         $result = $stmt->execute();
         $user = $result->fetchArray(SQLITE3_ASSOC);
@@ -20,6 +20,14 @@ class AuthController {
     }
 
     public function register($username, $password) {
+        $stmt = $this->db->prepare("SELECT COUNT(*) as count FROM users WHERE LOWER(username) = LOWER(:username)");
+        $stmt->bindValue(':username', $username, SQLITE3_TEXT);
+        $result = $stmt->execute();
+        $row = $result->fetchArray(SQLITE3_ASSOC);
+        if ($row['count'] > 0) {
+            return false;
+        }
+
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
         try {
             $stmt = $this->db->prepare("INSERT INTO users (username, password) VALUES (:username, :password)");
