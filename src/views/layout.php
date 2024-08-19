@@ -92,18 +92,26 @@
 
     const todoList = document.getElementById('todo-list');
     let draggedItem = null;
+    let dragStartY = 0;
 
-    todoList.addEventListener('dragstart', function(e) {
+    todoList.addEventListener('dragstart', dragStart);
+    todoList.addEventListener('dragend', dragEnd);
+    todoList.addEventListener('dragover', dragOver);
+    todoList.addEventListener('touchstart', touchStart, {passive: false});
+    todoList.addEventListener('touchmove', touchMove, {passive: false});
+    todoList.addEventListener('touchend', touchEnd);
+
+    function dragStart(e) {
         draggedItem = e.target;
         setTimeout(() => e.target.classList.add('dragging'), 0);
-    });
+    }
 
-    todoList.addEventListener('dragend', function(e) {
+    function dragEnd(e) {
         e.target.classList.remove('dragging');
         updatePositions();
-    });
+    }
 
-    todoList.addEventListener('dragover', function(e) {
+    function dragOver(e) {
         e.preventDefault();
         const afterElement = getDragAfterElement(todoList, e.clientY);
         const draggable = document.querySelector('.dragging');
@@ -112,7 +120,37 @@
         } else {
             todoList.insertBefore(draggable, afterElement);
         }
-    });
+    }
+
+    function touchStart(e) {
+        if (e.touches.length === 1) {
+            e.preventDefault();
+            draggedItem = e.target.closest('li');
+            dragStartY = e.touches[0].clientY;
+            draggedItem.classList.add('dragging');
+        }
+    }
+
+    function touchMove(e) {
+        if (draggedItem) {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const afterElement = getDragAfterElement(todoList, touch.clientY);
+            if (afterElement == null) {
+                todoList.appendChild(draggedItem);
+            } else {
+                todoList.insertBefore(draggedItem, afterElement);
+            }
+        }
+    }
+
+    function touchEnd(e) {
+        if (draggedItem) {
+            draggedItem.classList.remove('dragging');
+            updatePositions();
+            draggedItem = null;
+        }
+    }
 
     function getDragAfterElement(container, y) {
         const draggableElements = [...container.querySelectorAll('li:not(.dragging)')];
